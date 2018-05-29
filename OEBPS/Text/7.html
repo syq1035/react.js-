@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title></title>
+<link href="../Styles/ebook.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<h1>组件的 render 方法</h1>
+    
+      <ul style="font-size: 14px;">
+  <li>
+    作者：<a href="https://www.zhihu.com/people/hu-zi-da-ha" target="_blank">胡子大哈</a>
+  </li>
+  <li>
+    原文链接：<a href="http://huziketang.com/books/react/lesson7"> http://huziketang.com/books/react/lesson7 </a>
+  </li>
+  <li>转载请注明出处，保留原文链接和作者信息。</li>
+</ul>
+
+<p>React.js 中一切皆组件，用 React.js 写的其实就是 React.js 组件。我们在编写 React.js 组件的时候，一般都需要继承 React.js 的 <code>Component</code>（还有别的编写组件的方式我们后续会提到）。一个组件类必须要实现一个 <code>render</code> 方法，这个 <code>render</code> 方法必须要返回一个 JSX 元素。但这里要注意的是，必须要用一个外层的 JSX 元素把所有内容包裹起来。返回并列多个 JSX 元素是不合法的，下面是错误的做法：</p>
+
+<pre><code class="language-javascript">...
+render () {
+  return (
+    &lt;div&gt;第一个&lt;/div&gt;
+    &lt;div&gt;第二个&lt;/div&gt;
+  )
+}
+...
+</code></pre>
+
+<p>必须要用一个外层元素把内容进行包裹：</p>
+
+<pre><code class="language-javascript">...
+render () {
+  return (
+    &lt;div&gt;
+      &lt;div&gt;第一个&lt;/div&gt;
+      &lt;div&gt;第二个&lt;/div&gt;
+    &lt;/div&gt;
+  )
+}
+...
+</code></pre>
+
+<h2 id="表达式插入" class="sigil_not_in_toc">表达式插入</h2>
+<p>在 JSX 当中你可以插入 JavaScript 的表达式，表达式返回的结果会相应地渲染到页面上。表达式用 <code>{}</code> 包裹。例如：</p>
+
+<pre><code class="language-javascript">...
+render () {
+  const word = 'is good'
+  return (
+    &lt;div&gt;
+      &lt;h1&gt;React 小书 {word}&lt;/h1&gt;
+    &lt;/div&gt;
+  )
+}
+...
+</code></pre>
+
+<p>页面上就显示“React 小书 is good”。你也可以把它改成 <code>{1 + 2}</code>，它就会显示 “React 小书 3”。你也可以把它写成一个函数表达式返回：</p>
+
+<pre><code class="language-javascript">...
+render () {
+  return (
+    &lt;div&gt;
+      &lt;h1&gt;React 小书 {(function () { return 'is good'})()}&lt;/h1&gt;
+    &lt;/div&gt;
+  )
+}
+...
+</code></pre>
+
+<p>简而言之，<code>{}</code> 内可以放任何 JavaScript 的代码，包括变量、表达式计算、函数执行等等。 <code>render</code> 会把这些代码返回的内容如实地渲染到页面上，非常的灵活。</p>
+
+<p>表达式插入不仅仅可以用在标签内部，也可以用在标签的属性上，例如：</p>
+
+<pre><code class="language-javascript">...
+render () {
+  const className = 'header'
+  return (
+    &lt;div className={className}&gt;
+      &lt;h1&gt;React 小书&lt;/h1&gt;
+    &lt;/div&gt;
+  )
+}
+...
+</code></pre>
+
+<p>这样就可以为 <code>div</code> 标签添加一个叫 <code>header</code> 的类名。</p>
+
+<p>注意，直接使用 <code>class</code> 在 React.js 的元素上添加类名如 <code>&lt;div class=“xxx”&gt;</code> 这种方式是不合法的。因为 <code>class</code> 是 JavaScript 的关键字，所以 React.js 中定义了一种新的方式：<code>className</code> 来帮助我们给元素添加类名。</p>
+
+<p>还有一个特例就是 <code>for</code> 属性，例如 <code>&lt;label for='male'&gt;Male&lt;/label&gt;</code>，因为 <code>for</code> 也是 JavaScript 的关键字，所以在 JSX 用 <code>htmlFor</code> 替代，即 <code>&lt;label htmlFor='male'&gt;Male&lt;/label&gt;</code>。而其他的 HTML 属性例如 <code>style</code> 、<code>data-*</code> 等就可以像普通的 HTML 属性那样直接添加上去。</p>
+
+<h2 id="条件返回" class="sigil_not_in_toc">条件返回</h2>
+<p><code>{}</code> 上面说了，JSX 可以放置任何表达式内容。所以也可以放 JSX，实际上，我们可以在 <code>render</code> 函数内部根据不同条件返回不同的 JSX。例如：</p>
+
+<pre><code class="language-javascript">...
+render () {
+  const isGoodWord = true
+  return (
+    &lt;div&gt;
+      &lt;h1&gt;
+        React 小书
+        {isGoodWord
+          ? &lt;strong&gt; is good&lt;/strong&gt;
+          : &lt;span&gt; is not good&lt;/span&gt;
+        }
+      &lt;/h1&gt;
+    &lt;/div&gt;
+  )
+}
+...
+</code></pre>
+
+<p>上面的代码中定义了一个 <code>isGoodWord</code> 变量为 <code>true</code>，下面有个用 <code>{}</code> 包含的表达式，根据 <code>isGoodWord</code> 的不同返回不同的 JSX 内容。现在页面上是显示 <code>React 小书 is good</code>。如果你把 <code>isGoodWord</code> 改成 <code>false</code> 然后再看页面上就会显示 <code>React 小书 is not good</code>。</p>
+
+<p>如果你在表达式插入里面返回 <code>null</code> ，那么 React.js 会什么都不显示，相当于忽略了该表达式插入。结合条件返回的话，我们就做到显示或者隐藏某些元素：</p>
+
+<pre><code class="language-javascript">...
+render () {
+  const isGoodWord = true
+  return (
+    &lt;div&gt;
+      &lt;h1&gt;
+        React 小书
+        {isGoodWord
+          ? &lt;strong&gt; is good&lt;/strong&gt;
+          : null
+        }
+      &lt;/h1&gt;
+    &lt;/div&gt;
+  )
+}
+...
+</code></pre>
+
+<p>这样就相当于在 <code>isGoodWord</code> 为 <code>true</code> 的时候显示 <code>&lt;strong&gt;is good&lt;/strong&gt;</code>，否则就隐藏。</p>
+
+<p>条件返回 JSX 的方式在 React.js 中很常见，组件的呈现方式随着数据的变化而不一样，你可以利用 JSX 这种灵活的方式随时组合构建不同的页面结构。</p>
+
+<p>如果这里有些同学觉得比较难理解的话，可以回想一下，其实 JSX 就是 JavaScript 里面的对象，转换一下角度，把上面的内容翻译成 JavaScript 对象的形式，上面的代码就很好理解了。</p>
+
+<h2 id="jsx-元素变量" class="sigil_not_in_toc">JSX 元素变量</h2>
+<p>同样的，如果你能理解 JSX 元素就是 JavaScript 对象。那么你就可以联想到，JSX 元素其实可以像 JavaScript 对象那样自由地赋值给变量，或者作为函数参数传递、或者作为函数的返回值。</p>
+
+<pre><code class="language-javascript">...
+render () {
+  const isGoodWord = true
+  const goodWord = &lt;strong&gt; is good&lt;/strong&gt;
+  const badWord = &lt;span&gt; is not good&lt;/span&gt;
+  return (
+    &lt;div&gt;
+      &lt;h1&gt;
+        React 小书
+        {isGoodWord ? goodWord : badWord}
+      &lt;/h1&gt;
+    &lt;/div&gt;
+  )
+}
+...
+</code></pre>
+
+<p>这里给把两个 JSX 元素赋值给了 <code>goodWord</code> 和 <code>badWord</code> 两个变量，然后把它们作为表达式插入的条件返回值。达到效果和上面的例子一样，随机返回不同的页面效果呈现。</p>
+
+<p>再举一个例子：</p>
+
+<pre><code class="language-javascript">...
+renderGoodWord (goodWord, badWord) {
+  const isGoodWord = true
+  return isGoodWord ? goodWord : badWord
+}
+
+render () {
+  return (
+    &lt;div&gt;
+      &lt;h1&gt;
+        React 小书
+        {this.renderGoodWord(
+          &lt;strong&gt; is good&lt;/strong&gt;,
+          &lt;span&gt; is not good&lt;/span&gt;
+        )}
+      &lt;/h1&gt;
+    &lt;/div&gt;
+  )
+}
+...
+</code></pre>
+
+<p>这里我们定义了一个 <code>renderGoodWord</code> 函数，这个函数接受两个 JSX 元素作为参数，并且随机返回其中一个。在 <code>render</code> 方法中，我们把上面例子的两个 JSX 元素传入 <code>renderGoodWord</code> 当中，通过表达式插入把该函数返回的 JSX 元素插入到页面上。</p>
+</body>
+</html>

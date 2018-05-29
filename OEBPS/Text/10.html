@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title></title>
+<link href="../Styles/ebook.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<h1>组件的 state 和 setState</h1>
+    
+      <ul style="font-size: 14px;">
+  <li>
+    作者：<a href="https://www.zhihu.com/people/hu-zi-da-ha" target="_blank">胡子大哈</a>
+  </li>
+  <li>
+    原文链接：<a href="http://huziketang.com/books/react/lesson10"> http://huziketang.com/books/react/lesson10 </a>
+  </li>
+  <li>转载请注明出处，保留原文链接和作者信息。</li>
+</ul>
+
+<h2 id="state" class="sigil_not_in_toc">state</h2>
+<p>我们前面提到过，一个组件的显示形态是可以由它数据状态和配置参数决定的。一个组件可以拥有自己的状态，就像一个点赞按钮，可以有“已点赞”和“未点赞”状态，并且可以在这两种状态之间进行切换。React.js 的 <code>state</code> 就是用来存储这种可变化的状态的。</p>
+
+<p><a href="../Images/6caac0e901feb9f5579e79edda6a6f3b.jpg" target="_blank"><img src="../Images/6caac0e901feb9f5579e79edda6a6f3b.jpg" alt="React.js 小书教程图片"/></a></p>
+
+<p>我们还是拿点赞按钮做例子，它具有已点赞和未点赞两种状态。那么就可以把这个状态存储在 state 中。修改 <code>src/index.js</code> 为：</p>
+
+<pre><code class="language-javascript">import React, { Component } from 'react'
+import ReactDOM from 'react-dom'
+import './index.css'
+
+class LikeButton extends Component {
+  constructor () {
+    super()
+    this.state = { isLiked: false }
+  }
+
+  handleClickOnLikeButton () {
+    this.setState({
+      isLiked: !this.state.isLiked
+    })
+  }
+
+  render () {
+    return (
+      &lt;button onClick={this.handleClickOnLikeButton.bind(this)}&gt;
+        {this.state.isLiked ? '取消' : '点赞'} 👍
+      &lt;/button&gt;
+    )
+  }
+}
+...
+</code></pre>
+
+<p><code>isLiked</code> 存放在实例的 <code>state</code> 对象当中，这个对象在构造函数里面初始化。这个组件的 <code>render</code> 函数内，会根据组件的 <code>state</code> 的中的<code>isLiked</code>不同显示“取消”或“点赞”内容。并且给 <code>button</code> 加上了点击的事件监听。</p>
+
+<p>最后构建一个 <code>Index</code> ，在它的 <code>render</code> 函数内使用 <code>LikeButton</code> 。然后把 <code>Index</code> 渲染到页面上：</p>
+
+<pre><code class="language-javascript">...
+class Index extends Component {
+  render () {
+    return (
+      &lt;div&gt;
+        &lt;LikeButton /&gt;
+      &lt;/div&gt;
+    )
+  }
+}
+
+ReactDOM.render(
+  &lt;Index /&gt;,
+  document.getElementById('root')
+)
+</code></pre>
+
+<h2 id="setstate-接受对象参数" class="sigil_not_in_toc">setState 接受对象参数</h2>
+<p>在 <code>handleClickOnLikeButton</code> 事件监听函数里面，大家可以留意到，我们调用了 <code>setState</code> 函数，每次点击都会更新 <code>isLiked</code> 属性为 <code>!isLiked</code>，这样就可以做到点赞和取消功能。</p>
+
+<p><code>setState</code> 方法由父类 <code>Component</code> 所提供。<em>当我们调用这个函数的时候，React.js 会更新组件的状态 <code>state</code> ，并且重新调用 <code>render</code> 方法，然后再把 <code>render</code> 方法所渲染的最新的内容显示到页面上</em>。</p>
+
+<p>注意，当我们要改变组件的状态的时候，不能直接用 <code>this.state = xxx</code>  这种方式来修改，如果这样做 React.js 就没办法知道你修改了组件的状态，它也就没有办法更新页面。所以，一定要使用 React.js 提供的 <code>setState</code> 方法，<em>它接受一个对象或者函数作为参数</em>。</p>
+
+<p>传入一个对象的时候，这个对象表示该组件的新状态。但你只需要传入需要更新的部分就可以了，而不需要传入整个对象。例如，假设现在我们有另外一个状态 <code>name</code> ：</p>
+
+<pre><code class="language-javascript">...
+  constructor (props) {
+    super(props)
+    this.state = {
+      name: 'Tomy',
+      isLiked: false
+    }
+  }
+
+  handleClickOnLikeButton () {
+    this.setState({
+      isLiked: !this.state.isLiked
+    })
+  }
+...
+</code></pre>
+
+<p>因为点击的时候我们并不需要修改 <code>name</code>，所以只需要传入 <code>isLiked</code> 就行了。Tomy 还是那个 Tomy，而 <code>isLiked</code> 已经不是那个 <code>isLiked</code> 了。</p>
+
+<h2 id="setstate-接受函数参数" class="sigil_not_in_toc">setState 接受函数参数</h2>
+<p>这里还有要注意的是，当你调用 <code>setState</code> 的时候，<em>React.js 并不会马上修改 state</em>。而是把这个对象放到一个更新队列里面，稍后才会从队列当中把新的状态提取出来合并到 <code>state</code> 当中，然后再触发组件更新。这一点要好好注意。可以体会一下下面的代码：</p>
+
+<pre><code class="language-javascript">...
+  handleClickOnLikeButton () {
+    console.log(this.state.isLiked)
+    this.setState({
+      isLiked: !this.state.isLiked
+    })
+    console.log(this.state.isLiked)
+  }
+...
+</code></pre>
+
+<p>你会发现两次打印的都是 <code>false</code>，即使我们中间已经 <code>setState</code> 过一次了。这并不是什么 bug，只是 React.js 的 <code>setState</code> 把你的传进来的状态缓存起来，稍后才会帮你更新到 <code>state</code> 上，所以你获取到的还是原来的 <code>isLiked</code>。</p>
+
+<p>所以如果你想在 <code>setState</code> 之后使用新的 <code>state</code> 来做后续运算就做不到了，例如：</p>
+
+<pre><code class="language-javascript">...
+  handleClickOnLikeButton () {
+    this.setState({ count: 0 }) // =&gt; this.state.count 还是 undefined
+    this.setState({ count: this.state.count + 1}) // =&gt; undefined + 1 = NaN
+    this.setState({ count: this.state.count + 2}) // =&gt; NaN + 2 = NaN
+  }
+...
+</code></pre>
+
+<p>上面的代码的运行结果并不能达到我们的预期，我们希望 <code>count</code> 运行结果是 <code>3</code> ，可是最后得到的是 <code>NaN</code>。但是这种后续操作依赖前一个 <code>setState</code> 的结果的情况并不罕见。</p>
+
+<p>这里就自然地引出了 <code>setState</code> 的第二种使用方式，可以接受一个函数作为参数。React.js 会把上一个 <code>setState</code> 的结果传入这个函数，你就可以使用该结果进行运算、操作，然后返回一个对象作为更新 <code>state</code> 的对象：</p>
+
+<pre><code class="language-javascript">...
+  handleClickOnLikeButton () {
+    this.setState((prevState) =&gt; {
+      return { count: 0 }
+    })
+    this.setState((prevState) =&gt; {
+      return { count: prevState.count + 1 } // 上一个 setState 的返回是 count 为 0，当前返回 1
+    })
+    this.setState((prevState) =&gt; {
+      return { count: prevState.count + 2 } // 上一个 setState 的返回是 count 为 1，当前返回 3
+    })
+    // 最后的结果是 this.state.count 为 3
+  }
+...
+</code></pre>
+
+<p>这样就可以达到上述的<em>利用上一次 <code>setState</code> 结果进行运算</em>的效果。</p>
+
+<h2 id="setstate-合并" class="sigil_not_in_toc">setState 合并</h2>
+<p>上面我们进行了三次 <code>setState</code>，但是实际上组件只会重新渲染一次，而不是三次；这是因为在 React.js 内部会把 JavaScript 事件循环中的消息队列的同一个消息中的 <code>setState</code> 都进行合并以后再重新渲染组件。</p>
+
+<p>深层的原理并不需要过多纠结，你只需要记住的是：在使用 React.js 的时候，并不需要担心多次进行 <code>setState</code> 会带来性能问题。</p>
+</body>
+</html>

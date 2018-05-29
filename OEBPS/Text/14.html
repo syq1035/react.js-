@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title></title>
+<link href="../Styles/ebook.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<h1>实战分析：评论功能（一）</h1>
+    
+      <ul style="font-size: 14px;">
+  <li>
+    作者：<a href="https://www.zhihu.com/people/hu-zi-da-ha" target="_blank">胡子大哈</a>
+  </li>
+  <li>
+    原文链接：<a href="http://huziketang.com/books/react/lesson14"> http://huziketang.com/books/react/lesson14 </a>
+  </li>
+  <li>转载请注明出处，保留原文链接和作者信息。</li>
+</ul>
+
+<p>课程到这里大家已经掌握了 React.js 的基础知识和组件的基本写法了。现在可以把我们所学到的内容应用于实战当中。这里给大家提供一个实战的案例：一个评论功能。效果如下：</p>
+
+<p><a href="../Images/6ae1aaff7d1335b69c1da92044dcbeaa.jpg" target="_blank"><img src="../Images/6ae1aaff7d1335b69c1da92044dcbeaa.jpg" alt="React.js 小书实战之评论功能图片"/></a></p>
+
+<p><a href="https://huzidaha.github.io/react-naive-book-examples/comment-app/build/index.html">在线演示地址</a></p>
+
+<p>接下来会带大家一起来学习如何分析、编写这个功能。在这个过程中会补充一些之前没有提及的知识点，虽然这些知识点之前没有单独拿出来讲解，但是这些知识点也很关键。</p>
+
+<h2 id="组件划分" class="sigil_not_in_toc">组件划分</h2>
+<p>React.js 中一切都是组件，用 React.js 构建的功能其实也就是由各种组件组合而成。所以拿到一个需求以后，我们要做的第一件事情就是理解需求、分析需求、划分这个需求由哪些组件构成。</p>
+
+<p>组件的划分没有特别明确的标准。划分组件的目的性是为了代码可复用性、可维护性。只要某个部分有可能复用到别的地方，你都可以把它抽离出来当成一个组件；或者把某一部分抽离出来对代码的组织和管理会带来帮助，你也可以毫不犹豫地把它抽离出来。</p>
+
+<p>对于上面这个评论功能，可以粗略地划分成以下几部分：</p>
+
+<p><a href="../Images/3de7ae56cafed407a83e07db49dce071.jpg" target="_blank"><img src="../Images/3de7ae56cafed407a83e07db49dce071.jpg" alt="React.js 小书实战之评论功能图片"/></a></p>
+
+<p><code>CommentApp</code>：评论功能的整体用一个叫 <code>CommentApp</code> 的组件包含起来。<code>CommentApp</code> 包含上部和下部两部分。</p>
+
+<p><code>CommentInput</code>：上面部分是负责用户输入可操作的输入区域，包括输入评论的用户名、评论内容和发布按钮，这一部分功能划分到一个单独的组件 <code>CommentInput</code> 中。</p>
+
+<p><code>CommentList</code>：下面部分是评论列表，用一个叫 <code>CommentList</code> 的组件负责列表的展示。</p>
+
+<p><code>Comment</code>：每个评论列表项由独立的组件 <code>Comment</code> 负责显示，这个组件被 <code>CommentList</code> 所使用。</p>
+
+<p>所以这个评论功能划分成四种组件，<code>CommentApp</code>、<code>CommentInput</code>、<code>CommentList</code>、<code>Comment</code>。用组件树表示：</p>
+
+<p><a href="../Images/80d3bdbd2dc4d29e50c97e3fa7399ce8.jpg" target="_blank"><img src="../Images/80d3bdbd2dc4d29e50c97e3fa7399ce8.jpg" alt="React.js 小书实战之评论功能图片"/></a></p>
+
+<p>现在就可以尝试编写代码了。</p>
+
+<h2 id="组件实现" class="sigil_not_in_toc">组件实现</h2>
+<p>在写代码之前，我们先用 <code>create-react-app</code> 构建一个新的工程目录。所有的评论功能在这个工程内完成：</p>
+
+<pre><code>create-react-app comment-app
+</code></pre>
+
+<p>然后在工程目录下的 <code>src/</code> 目录下新建四个文件，每个文件对应的是上述的四个组件。</p>
+
+<pre><code>src/
+  CommentApp.js
+  CommentInput.js
+  CommentList.js
+  Comment.js
+  ...
+</code></pre>
+
+<p>你可以注意到，这里的文件名的开头是大写字母。我们遵循一个原则：如果一个文件导出的是一个类，那么这个文件名就用大写开头。四个组件类文件导出都是类，所以都是大写字母开头。</p>
+
+<p>我们先铺垫一些基础代码，让组件之间的关系清晰起来。遵循“自顶而下，逐步求精”的原则，我们从组件的顶层开始，再一步步往下构建组件树。先修改 <code>CommentApp.js</code> 如下：</p>
+
+<pre><code class="language-javascript">import React, { Component } from 'react'
+import CommentInput from './CommentInput'
+import CommentList from './CommentList'
+
+class CommentApp extends Component {
+  render() {
+    return (
+      &lt;div&gt;
+        &lt;CommentInput /&gt;
+        &lt;CommentList /&gt;
+      &lt;/div&gt;
+    )
+  }
+}
+
+export default CommentApp
+</code></pre>
+
+<p><code>CommentApp</code> 现在暂时还很简单，文件顶部引入了 <code>CommentInput</code> 和 <code>CommentList</code> 。然后按照上面的需求，应用在了 <code>CommentApp</code> 返回的 JSX 结构中，上面是用户输入区域，下面是评论列表。</p>
+
+<p>现在来修改 <code>CommentInput.js</code> 中的内容：</p>
+
+<pre><code class="language-javascript">import React, { Component } from 'react'
+
+class CommentInput extends Component {
+  render() {
+    return (
+      &lt;div&gt;CommentInput&lt;/div&gt;
+    )
+  }
+}
+
+export default CommentInput
+</code></pre>
+
+<p>这里暂时让它只简单返回 <code>&lt;div&gt;</code> 结构，同样地修改 <code>CommentList.js</code> ：</p>
+
+<pre><code class="language-javascript">import React, { Component } from 'react'
+
+class CommentList extends Component {
+  render() {
+    return (
+      &lt;div&gt;CommentList&lt;/div&gt;
+    )
+  }
+}
+
+export default CommentList
+</code></pre>
+
+<p>现在可以把这个简单的结构渲染到页面上看看什么效果，修改 <code>src/index.js</code>：</p>
+
+<pre><code class="language-javascript">import React from 'react'
+import ReactDOM from 'react-dom'
+import CommentApp from './CommentApp'
+import './index.css'
+
+ReactDOM.render(
+  &lt;CommentApp /&gt;,
+  document.getElementById('root')
+)
+</code></pre>
+
+<p>然后进入工程目录启动工程：</p>
+
+<pre><code>npm run start
+</code></pre>
+
+<p>在浏览器中可以看到，基本的结构已经渲染到了页面上了：</p>
+
+<p><a href="../Images/fd3e41a9b1c69080142caf8ee306f20f.jpg" target="_blank"><img src="../Images/fd3e41a9b1c69080142caf8ee306f20f.jpg" alt="React.js 小书实战之评论功能图片"/></a></p>
+
+<h2 id="添加样式" class="sigil_not_in_toc">添加样式</h2>
+<p>现在想让这个结构在浏览器中居中显示，我们就要给 <code>CommentApp</code> 里面的 <code>&lt;div&gt;</code> 添加样式。修改 <code>CommentApp</code> 中的<code>render</code> 方法，给它添加一个 <code>wrapper</code> 类名：</p>
+
+<pre><code class="language-javascript">...
+class CommentApp extends Component {
+  render() {
+    return (
+      &lt;div className='wrapper'&gt;
+        &lt;CommentInput /&gt;
+        &lt;CommentList /&gt;
+      &lt;/div&gt;
+    )
+  }
+}
+...
+</code></pre>
+
+<p>然后在 <code>index.css</code> 文件中添加样式：</p>
+
+<pre><code class="language-css">.wrapper {
+  width: 500px;
+  margin: 10px auto;
+  font-size: 14px;
+  background-color: #fff;
+  border: 1px solid #f1f1f1;
+  padding: 20px;
+}
+</code></pre>
+
+<p>在浏览器中可以看到样式生效了：</p>
+
+<p><a href="../Images/c1b10e3e0c27dd86d0bcf01a3cf6bc16.jpg" target="_blank"><img src="../Images/c1b10e3e0c27dd86d0bcf01a3cf6bc16.jpg" alt="React.js 小书实战之评论功能图片"/></a></p>
+
+<p>评论功能案例的所有样式都是通过这种方式进行添加。由于我们专注点在于 React.js，本案例后续不会在样式上过于纠缠。这里写好了一个样式文件（<a href="https://github.com/huzidaha/react-naive-book-examples/blob/master/comment-app/src/index.css">index.css</a> ）提供给大家，可以复制到 <code>index.css</code> 当中。后续只需要在元素上加上类名就可以了。</p>
+
+<p>如何在 React.js 中使用样式有很多种方式，也是一个比较大的话题，有很多种不同的方式也有很多不同的争论，这个话题后续有机会会重点讲解。</p>
+</body>
+</html>

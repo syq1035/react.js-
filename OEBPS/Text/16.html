@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title></title>
+<link href="../Styles/ebook.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<h1>实战分析：评论功能（三）</h1>
+    
+      <ul style="font-size: 14px;">
+  <li>
+    作者：<a href="https://www.zhihu.com/people/hu-zi-da-ha" target="_blank">胡子大哈</a>
+  </li>
+  <li>
+    原文链接：<a href="http://huziketang.com/books/react/lesson16"> http://huziketang.com/books/react/lesson16 </a>
+  </li>
+  <li>转载请注明出处，保留原文链接和作者信息。</li>
+</ul>
+
+<p>接下来的代码比较顺理成章了。修改 <code>CommentList</code> 可以让它可以显示评论列表：</p>
+
+<pre><code class="language-javascript">// CommentList.js
+import React, { Component } from 'react'
+
+class CommentList extends Component {
+  render() {
+    const comments = [
+      {username: 'Jerry', content: 'Hello'},
+      {username: 'Tomy', content: 'World'},
+      {username: 'Lucy', content: 'Good'}
+    ]
+
+    return (
+      &lt;div&gt;{comments.map((comment, i) =&gt; {
+        return (
+          &lt;div key={i}&gt;
+            {comment.username}：{comment.content}
+          &lt;/div&gt;
+        )
+      })}&lt;/div&gt;
+    )
+  }
+}
+
+export default CommentList
+</code></pre>
+
+<p>这里的代码没有什么新鲜的内容，只不过是建立了一个 <code>comments</code> 的数组来存放一些测试数据的内容，方便我们后续测试。然后把 <code>comments</code> 的数据渲染到页面上，这跟我们之前讲解的章节的内容一样——使用 map 构建一个存放 JSX 的数组。就可以在浏览器看到效果：</p>
+
+<p><a href="../Images/53c1c45cdd8cc8c7794f2c8de9113aea.jpg" target="_blank"><img src="../Images/53c1c45cdd8cc8c7794f2c8de9113aea.jpg" alt="React.js 小书实战之评论功能图片"/></a></p>
+
+<p>修改 <code>Comment.js</code> 让它来负责具体每条评论内容的渲染：</p>
+
+<pre><code class="language-javascript">import React, { Component } from 'react'
+
+class Comment extends Component {
+  render () {
+    return (
+      &lt;div className='comment'&gt;
+        &lt;div className='comment-user'&gt;
+          &lt;span&gt;{this.props.comment.username} &lt;/span&gt;：
+        &lt;/div&gt;
+        &lt;p&gt;{this.props.comment.content}&lt;/p&gt;
+      &lt;/div&gt;
+    )
+  }
+}
+
+export default Comment
+</code></pre>
+
+<p>这个组件可能是我们案例里面最简单的组件了，它只负责每条评论的具体显示。你只需要给它的 <code>props</code> 中传入一个 <code>comment</code> 对象，它就会把该对象中的 <code>username</code> 和 <code>content</code> 渲染到页面上。</p>
+
+<p>马上把 <code>Comment</code> 应用到 <code>CommentList</code> 当中，修改 <code>CommentList.js</code> 代码：</p>
+
+<pre><code class="language-javascript">import React, { Component } from 'react'
+import Comment from './Comment'
+
+class CommentList extends Component {
+  render() {
+    const comments = [
+      {username: 'Jerry', content: 'Hello'},
+      {username: 'Tomy', content: 'World'},
+      {username: 'Lucy', content: 'Good'}
+    ]
+
+    return (
+      &lt;div&gt;
+        {comments.map((comment, i) =&gt; &lt;Comment comment={comment} key={i} /&gt;)}
+      &lt;/div&gt;
+    )
+  }
+}
+
+export default CommentList
+</code></pre>
+
+<p>可以看到测试数据显示到了页面上：</p>
+
+<p><a href="../Images/c3d179ba795881ef7017017159a2a793.jpg" target="_blank"><img src="../Images/c3d179ba795881ef7017017159a2a793.jpg" alt="React.js 小书实战之评论功能图片"/></a></p>
+
+<p>之前我们说过 <code>CommentList</code> 的数据应该是由父组件 <code>CommentApp</code> 传进来的，现在我们删除测试数据，改成从 <code>props</code> 获取评论数据：</p>
+
+<pre><code class="language-javascript">import React, { Component } from 'react'
+import Comment from './Comment'
+
+class CommentList extends Component {
+  render() {
+    return (
+      &lt;div&gt;
+        {this.props.comments.map((comment, i) =&gt;
+          &lt;Comment comment={comment} key={i} /&gt;
+        )}
+      &lt;/div&gt;
+    )
+  }
+}
+
+export default CommentList
+</code></pre>
+
+<p>这时候可以看到浏览器报错了：</p>
+
+<p><a href="../Images/8477fc53dc5e032ca60e2c7fa793f23c.jpg" target="_blank"><img src="../Images/8477fc53dc5e032ca60e2c7fa793f23c.jpg" alt="React.js 小书实战之评论功能图片"/></a></p>
+
+<p>这是因为<code>CommentApp</code> 使用 <code>CommentList</code> 的时候并没有传入 <code>comments</code>。我们给 <code>CommentList</code> 加上 <code>defaultProps</code> 防止 <code>comments</code> 不传入的情况：</p>
+
+<pre><code class="language-javascript">class CommentList extends Component {
+  static defaultProps = {
+    comments: []
+  }
+...
+</code></pre>
+
+<p>这时候代码就不报错了。但是 <code>CommentInput</code> 给 <code>CommentApp</code> 传递的评论数据并没有传递给 <code>CommentList</code>，所以现在发表评论时没有反应的。</p>
+
+<p>我们在 <code>CommentApp</code> 的 <code>state</code> 中初始化一个数组，来保存所有的评论数据，并且通过 <code>props</code> 把它传递给 <code>CommentList</code>。修改 <code>CommentApp.js</code>：</p>
+
+<pre><code class="language-javascript">import React, { Component } from 'react'
+import CommentInput from './CommentInput'
+import CommentList from './CommentList'
+
+class CommentApp extends Component {
+  constructor () {
+    super()
+    this.state = {
+      comments: []
+    }
+  }
+
+  handleSubmitComment (comment) {
+    console.log(comment)
+  }
+
+  render() {
+    return (
+      &lt;div className='wrapper'&gt;
+        &lt;CommentInput onSubmit={this.handleSubmitComment.bind(this)} /&gt;
+        &lt;CommentList comments={this.state.comments}/&gt;
+      &lt;/div&gt;
+    )
+  }
+}
+
+export default CommentApp
+</code></pre>
+
+<p>接下来，修改 <code>handleSubmitComment</code> ：每当用户发布评论的时候，就把评论数据插入 <code>this.state.comments</code> 中，然后通过 <code>setState</code> 把数据更新到页面上：</p>
+
+<pre><code class="language-javascript">...
+  handleSubmitComment (comment) {
+    this.state.comments.push(comment)
+    this.setState({
+      comments: this.state.comments
+    })
+  }
+...
+</code></pre>
+
+<blockquote>
+  <p>小提示：这里的代码直接往 <code>state.comments</code> 数组里面插入数据其实违反了 React.js 的 <a href="https://facebook.github.io/react/tutorial/tutorial.html#why-immutability-is-important"> <code>state</code> 不可直接修改的原则</a> 。但其实这个原则是为了 <code>shouldComponentUpdate</code> 的优化和变化的跟踪，而这种目的在使用 React-redux 的时候其实会自然而然达到，我们很少直接手动地优化，这时候这个原则就会显得有点鸡肋。所以这里为了降低大家的理解成本就不强制使用这个原则，有兴趣的朋友可以参考： <a href="https://facebook.github.io/react/tutorial/tutorial.html#why-immutability-is-important">Tutorial: Intro To React - React</a>。</p>
+</blockquote>
+
+<p>现在代码应该是可以按照需求正常运作了，输入用户名和评论内容，然后点击发布：</p>
+
+<p><a href="../Images/37caf71d8fe3a26193e808b2b68727e6.jpg" target="_blank"><img src="../Images/37caf71d8fe3a26193e808b2b68727e6.jpg" alt="React.js 小书实战之评论功能图片"/></a></p>
+
+<p>为了让代码的健壮性更强，给 <code>handleSubmitComment</code> 加入简单的数据检查：</p>
+
+<pre><code class="language-javascript">...
+  handleSubmitComment (comment) {
+    if (!comment) return
+    if (!comment.username) return alert('请输入用户名')
+    if (!comment.content) return alert('请输入评论内容')
+    this.state.comments.push(comment)
+    this.setState({
+      comments: this.state.comments
+    })
+  }
+...
+</code></pre>
+
+<p>到这里，我们的第一个实战案例——评论功能已经完成了！完整的案例代码可以在这里 <a href="https://github.com/huzidaha/react-naive-book-examples/tree/master/comment-app">comment-app</a> 找到， <a href="https://huzidaha.github.io/react-naive-book-examples/comment-app/build/index.html">在线演示</a> 体验。</p>
+
+<h2 id="总结" class="sigil_not_in_toc">总结</h2>
+<p>在这个案例里面，我们除了复习了之前所学过的内容以外还学习了新的知识点。包括：</p>
+
+<ol>
+  <li>实现功能之前先理解、分析需求，划分组件。并且掌握划分组件的基本原则——可复用性、可维护性。</li>
+  <li>受控组件的概念，React.js 中的 <code>&lt;input /&gt;</code> 、<code>&lt;textarea /&gt;</code>、<code>&lt;select /&gt;</code> 等元素的 <code>value</code> 值如果是受到 React.js 的控制，那么就是受控组件。</li>
+  <li>组件之间使用 <code>props</code> 通过父元素传递数据的技巧。</li>
+</ol>
+
+<p>当然，在真实的项目当中，这个案例很多地方是可以优化的。包括组件可复用性方面（有没有发现其实 <code>CommentInput</code> 中有重复的代码？）、应用的状态管理方面。但在这里为了给大家总结和演示，实现到这个程度也就足够了。</p>
+
+<p>到此为止，React.js 小书的第一阶段已经结束，你可以利用这些知识点来构建简单的功能模块了。但是在实际项目如果要构建比较系统和完善的功能，还需要更多的 React.js 的知识还有关于前端开发的一些认知来协助我们。接下来我们会开启新的一个阶段来学习更多关于 React.js 的知识，以及如何更加灵活和熟练地使用它们。让我们进入第二阶段吧！</p>
+</body>
+</html>

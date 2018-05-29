@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title></title>
+<link href="../Styles/ebook.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<h1>实战分析：评论功能（五）</h1>
+    
+      <ul style="font-size: 14px;">
+  <li>
+    作者：<a href="https://www.zhihu.com/people/hu-zi-da-ha" target="_blank">胡子大哈</a>
+  </li>
+  <li>
+    原文链接：<a href="http://huziketang.com/books/react/lesson26"> http://huziketang.com/books/react/lesson26 </a>
+  </li>
+  <li>转载请注明出处，保留原文链接和作者信息。</li>
+</ul>
+
+<p>（本文未审核）</p>
+
+<h2 id="持久化评论" class="sigil_not_in_toc">持久化评论</h2>
+<p>同样地，可以通过类似于用户名持久化的方式对评论列表内容进行持久化，让用户发布的评论在刷新页面以后依然可以存在。修改 <code>src/CommentApp.js</code>：</p>
+
+<pre><code class="language-javascript">class CommentApp extends Component {
+  constructor () {
+    super()
+    this.state = {
+      comments: []
+    }
+  }
+
+  componentWillMount () {
+    this._loadComments()
+  }
+
+  _loadComments () {
+    let comments = localStorage.getItem('comments')
+    if (comments) {
+      comments = JSON.parse(comments)
+      this.setState({ comments })
+    }
+  }
+
+  _saveComments (comments) {
+    localStorage.setItem('comments', JSON.stringify(comments))
+  }
+
+  handleSubmitComment (comment) {
+    if (!comment) return
+    if (!comment.username) return alert('请输入用户名')
+    if (!comment.content) return alert('请输入评论内容')
+    const comments = this.state.comments
+    comments.push(comment)
+    this.setState({ comments })
+    this._saveComments(comments)
+  }
+...
+</code></pre>
+
+<p>我们增加了 <code>_loadComments</code> 和 <code>_saveComments</code> 分别用于加载和保存评论列表数据。用户每次提交评论都会把评论列表数据保存一次，所以我们在 <code>handleSubmitComment</code> 调用 <code>_saveComments</code> 方法；而在 <code>componentWillMount</code> 中调用 <code>_loadComments</code> 方法，在组件开始挂载的时候把评论列表数据加载出来 <code>setState</code> 到 <code>this.state</code> 当中，组件就可以渲染从 LocalStorage 从加载出来的评论列表数据了。</p>
+
+<p>现在发布评论，然后刷新可以看到我们的评论并不会像以前一样消失。非常的不错，持久化评论的功能也完成了。</p>
+
+<h2 id="显示评论发布时间" class="sigil_not_in_toc">显示评论发布时间</h2>
+<p>现在我们给每条评论都加上发布的日期，并且在评论列表项上显示已经发表了多久，例如“1 秒前”、“30分钟前”，并且会每隔 5 秒进行更新。修改 <code>src/CommentInput.js</code> 当用户点击发布按钮的时候，传出去的评论数据带上评论发布的时间戳：</p>
+
+<pre><code class="language-javascript">...
+  handleSubmit () {
+    if (this.props.onSubmit) {
+      this.props.onSubmit({
+        username: this.state.username,
+        content: this.state.content,
+        createdTime: +new Date()
+      })
+    }
+    this.setState({ content: '' })
+  }
+...
+</code></pre>
+
+<p>在评论列表项上显示评论，修改 <code>src/comment.js</code>：</p>
+
+<pre><code class="language-javascript">class Comment extends Component {
+  static propTypes = {
+    comment: PropTypes.object.isRequired
+  }
+
+  constructor () {
+    super()
+    this.state = { timeString: '' }
+  }
+
+  componentWillMount () {
+    this._updateTimeString()
+  }
+
+  _updateTimeString () {
+    const comment = this.props.comment
+    const duration = (+Date.now() - comment.createdTime) / 1000
+    this.setState({
+      timeString: duration &gt; 60
+        ? `${Math.round(duration / 60)} 分钟前`
+        : `${Math.round(Math.max(duration, 1))} 秒前`
+    })
+  }
+
+  render () {
+    return (
+      &lt;div className='comment'&gt;
+        &lt;div className='comment-user'&gt;
+          &lt;span&gt;{this.props.comment.username} &lt;/span&gt;：
+        &lt;/div&gt;
+        &lt;p&gt;{this.props.comment.content}&lt;/p&gt;
+        &lt;span className='comment-createdtime'&gt;
+          {this.state.timeString}
+        &lt;/span&gt;
+      &lt;/div&gt;
+    )
+  }
+}
+</code></pre>
+
+<p>每个 <code>Comment</code> 组件实例会保存一个 <code>timeString</code> 状态，用于该评论显示发布了多久。<code>_updateTimeString</code> 这个私有方法会根据 <code>props.comment</code> 里面的 <code>createdTime</code> 来更新这个 <code>timeString</code>：计算当前时间和评论发布时间的时间差，如果已经发布 60 秒以上就显示分钟，否则就显示秒。然后 <code>componentWillMount</code> 会在组件挂载阶段调用 <code>_updateTimeString</code> 更新一下这个字符串，<code>render()</code> 方法就把这个显示时间差的字符串渲染到一个 <code>&lt;span&gt;</code> 上。</p>
+
+<p>再看看页面显示：</p>
+
+<p><a href="../Images/5496e9f329cda8d9d2054a06d9ed96d8.jpg" target="_blank"><img src="../Images/5496e9f329cda8d9d2054a06d9ed96d8.jpg" alt="React.js 小书实战评论功能图片"/></a></p>
+
+<p>这时候的时间是不会自动更新的。除非你手动刷新页面，否则永远显示“1 秒前”。我们可以在 <code>componentWillMount</code> 中启动一个定时器，每隔 5 秒调用一下 <code>_updateTimeString</code>，让它去通过 <code>setState</code> 更新 <code>timeString</code>：</p>
+
+<pre><code class="language-javascript">...
+  componentWillMount () {
+    this._updateTimeString()
+    this._timer = setInterval(
+      this._updateTimeString.bind(this),
+      5000
+    )
+  }
+...
+</code></pre>
+
+<p>这样就可以做到评论的发布时间自动刷新了，到这里前 4 个需求都已经完成了。</p>
+</body>
+</html>

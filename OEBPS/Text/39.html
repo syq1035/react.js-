@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title></title>
+<link href="../Styles/ebook.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<h1>动手实现 React-redux（四）：mapDispatchToProps</h1>
+    
+      <ul style="font-size: 14px;">
+  <li>
+    作者：<a href="https://www.zhihu.com/people/hu-zi-da-ha" target="_blank">胡子大哈</a>
+  </li>
+  <li>
+    原文链接：<a href="http://huziketang.com/books/react/lesson39"> http://huziketang.com/books/react/lesson39 </a>
+  </li>
+  <li>转载请注明出处，保留原文链接和作者信息。</li>
+</ul>
+
+<p>（本文未审核）</p>
+
+<p>在重构 <code>ThemeSwitch</code> 的时候我们发现，<code>ThemeSwitch</code> 除了需要 <code>store</code> 里面的数据以外，还需要 <code>store</code> 来 <code>dispatch</code>：</p>
+
+<pre><code class="language-javascript">...
+  // dispatch action 去改变颜色
+  handleSwitchColor (color) {
+    const { store } = this.context
+    store.dispatch({
+      type: 'CHANGE_COLOR',
+      themeColor: color
+    })
+  }
+...
+</code></pre>
+
+<p>目前版本的 <code>connect</code> 是达不到这个效果的，我们需要改进它。</p>
+
+<p>想一下，既然可以通过给 <code>connect</code> 函数传入 <code>mapStateToProps</code> 来告诉它如何获取、整合状态，我们也可以想到，可以给它传入另外一个参数来告诉它我们的组件需要如何触发 <code>dispatch</code>。我们把这个参数叫 <code>mapDispatchToProps</code>：</p>
+
+<pre><code class="language-javascript">const mapDispatchToProps = (dispatch) =&gt; {
+  return {
+    onSwitchColor: (color) =&gt; {
+      dispatch({ type: 'CHANGE_COLOR', themeColor: color })
+    }
+  }
+}
+</code></pre>
+
+<p>和 <code>mapStateToProps</code> 一样，它返回一个对象，这个对象内容会同样被 <code>connect</code> 当作是 <code>props</code> 参数传给被包装的组件。不一样的是，这个函数不是接受 <code>state</code> 作为参数，而是 <code>dispatch</code>，你可以在返回的对象内部定义一些函数，这些函数会用到 <code>dispatch</code> 来触发特定的 <code>action</code>。</p>
+
+<p>调整 <code>connect</code> 让它能接受这样的 <code>mapDispatchToProps</code>：</p>
+
+<pre><code class="language-javascript">export const connect = (mapStateToProps, mapDispatchToProps) =&gt; (WrappedComponent) =&gt; {
+  class Connect extends Component {
+    static contextTypes = {
+      store: PropTypes.object
+    }
+
+    constructor () {
+      super()
+      this.state = {
+        allProps: {}
+      }
+    }
+
+    componentWillMount () {
+      const { store } = this.context
+      this._updateProps()
+      store.subscribe(() =&gt; this._updateProps())
+    }
+
+    _updateProps () {
+      const { store } = this.context
+      let stateProps = mapStateToProps
+        ? mapStateToProps(store.getState(), this.props)
+        : {} // 防止 mapStateToProps 没有传入
+      let dispatchProps = mapDispatchToProps
+        ? mapDispatchToProps(store.dispatch, this.props)
+        : {} // 防止 mapDispatchToProps 没有传入
+      this.setState({
+        allProps: {
+          ...stateProps,
+          ...dispatchProps,
+          ...this.props
+        }
+      })
+    }
+
+    render () {
+      return &lt;WrappedComponent {...this.state.allProps} /&gt;
+    }
+  }
+  return Connect
+}
+</code></pre>
+
+<p>在 <code>_updateProps</code> 内部，我们把<code>store.dispatch</code> 作为参数传给 <code>mapDispatchToProps</code>  ，它会返回一个对象 <code>dispatchProps</code>。接着把 <code>stateProps</code>、<code>dispatchProps</code>、<code>this.props</code> 三者合并到 <code>this.state.allProps</code> 里面去，这三者的内容都会在 <code>render</code> 函数内全部传给被包装的组件。</p>
+
+<p>另外，我们稍微调整了一下，在调用 <code>mapStateToProps</code> 和 <code>mapDispatchToProps</code> 之前做判断，让这两个参数都是可以缺省的，这样即使不传这两个参数程序也不会报错。</p>
+
+<p>这时候我们就可以重构 <code>ThemeSwitch</code>，让它摆脱 <code>store.dispatch</code>：</p>
+
+<pre><code class="language-javascript">import React, { Component, PropTypes } from 'react'
+import { connect } from './react-redux'
+
+class ThemeSwitch extends Component {
+  static propTypes = {
+    themeColor: PropTypes.string,
+    onSwitchColor: PropTypes.func
+  }
+
+  handleSwitchColor (color) {
+    if (this.props.onSwitchColor) {
+      this.props.onSwitchColor(color)
+    }
+  }
+
+  render () {
+    return (
+      &lt;div&gt;
+        &lt;button
+          style={{ color: this.props.themeColor }}
+          onClick={this.handleSwitchColor.bind(this, 'red')}&gt;Red&lt;/button&gt;
+        &lt;button
+          style={{ color: this.props.themeColor }}
+          onClick={this.handleSwitchColor.bind(this, 'blue')}&gt;Blue&lt;/button&gt;
+      &lt;/div&gt;
+    )
+  }
+}
+
+const mapStateToProps = (state) =&gt; {
+  return {
+    themeColor: state.themeColor
+  }
+}
+const mapDispatchToProps = (dispatch) =&gt; {
+  return {
+    onSwitchColor: (color) =&gt; {
+      dispatch({ type: 'CHANGE_COLOR', themeColor: color })
+    }
+  }
+}
+ThemeSwitch = connect(mapStateToProps, mapDispatchToProps)(ThemeSwitch)
+
+export default ThemeSwitch
+</code></pre>
+
+<p>光看 <code>ThemeSwitch</code> 内部，是非常清爽干净的，只依赖外界传进来的 <code>themeColor</code> 和 <code>onSwitchColor</code>。但是 <code>ThemeSwitch</code> 内部并不知道这两个参数其实都是我们去 <code>store</code> 里面取的，它是 Dumb 的。这时候这三个组件的重构都已经完成了，代码大大减少、不依赖 context，并且功能和原来一样。</p>
+</body>
+</html>

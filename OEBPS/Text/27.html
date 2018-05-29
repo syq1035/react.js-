@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title></title>
+<link href="../Styles/ebook.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<h1>实战分析：评论功能（六）</h1>
+    
+      <ul style="font-size: 14px;">
+  <li>
+    作者：<a href="https://www.zhihu.com/people/hu-zi-da-ha" target="_blank">胡子大哈</a>
+  </li>
+  <li>
+    原文链接：<a href="http://huziketang.com/books/react/lesson27"> http://huziketang.com/books/react/lesson27 </a>
+  </li>
+  <li>转载请注明出处，保留原文链接和作者信息。</li>
+</ul>
+
+<p>（本文未审核）</p>
+
+<h2 id="删除评论" class="sigil_not_in_toc">删除评论</h2>
+<p>现在发布评论，评论不会消失，评论越来越多并不是什么好事。所以我们给评论组件加上删除评论的功能，这样就可以删除不想要的评论了。修改 <code>src/Comment.js</code> 的 <code>render</code> 方法，新增一个删除按钮：</p>
+
+<pre><code class="language-javascript">...
+  render () {
+    const { comment } = this.props
+    return (
+      &lt;div className='comment'&gt;
+        &lt;div className='comment-user'&gt;
+          &lt;span className='comment-username'&gt;
+            {comment.username}
+          &lt;/span&gt;：
+        &lt;/div&gt;
+        &lt;p&gt;{comment.content}&lt;/p&gt;
+        &lt;span className='comment-createdtime'&gt;
+          {this.state.timeString}
+        &lt;/span&gt;
+        &lt;span className='comment-delete'&gt;
+          删除
+        &lt;/span&gt;
+      &lt;/div&gt;
+    )
+  }
+... 
+</code></pre>
+
+<p>我们在后面加了一个删除按钮，因为 <code>index.css</code> 定义了样式，所以鼠标放到特定的评论上才会显示删除按钮，让用户体验好一些。</p>
+
+<p>我们知道评论列表数据是放在 <code>CommentApp</code> 当中的，而这个删除按钮是在 <code>Comment</code> 当中的，现在我们要做的事情是用户点击某条评论的删除按钮，然后在 <code>CommentApp</code> 中把相应的数据删除。但是 <code>CommentApp</code> 和 <code>Comment</code> 的关系是这样的：</p>
+
+<p><a href="../Images/664031c77de43cc3a40ce8e239599ca3.jpg" target="_blank"><img src="../Images/664031c77de43cc3a40ce8e239599ca3.jpg" alt="React.js 小书实战评论功能图片"/></a></p>
+
+<p><code>Comment</code> 和 <code>CommentApp</code> 之间隔了一个 <code>CommentList</code>，<code>Comment</code> 无法直接跟 <code>CommentApp</code> 打交道，只能通过 <code>CommentList</code> 来转发这种删除评论的消息。修改 <code>Comment</code>  组件，让它可以把删除的消息传递到上一层：</p>
+
+<pre><code class="language-javascript">class Comment extends Component {
+  static propTypes = {
+    comment: PropTypes.object.isRequired,
+    onDeleteComment: PropTypes.func,
+    index: PropTypes.number
+  }
+...
+  handleDeleteComment () {
+    if (this.props.onDeleteComment) {
+      this.props.onDeleteComment(this.props.index)
+    }
+  }
+
+  render () {
+    ...
+        &lt;span
+          onClick={this.handleDeleteComment.bind(this)}
+          className='comment-delete'&gt;
+          删除
+        &lt;/span&gt;
+      &lt;/div&gt;
+    )
+  }
+
+</code></pre>
+
+<p>现在在使用 <code>Comment</code> 的时候，可以传入 <code>onDeleteComment</code> 和 <code>index</code> 两个参数。<code>index</code> 用来标志这个评论在列表的下标，这样点击删除按钮的时候我们才能知道你点击的是哪个评论，才能知道怎么从列表数据中删除。用户点击删除会调用 <code>handleDeleteComment</code> ，它会调用从上层传入的 <code>props. onDeleteComment</code> 函数告知上一层组件删除的消息，并且把评论下标传出去。现在修改 <code>src/CommentList.js</code> 让它把这两个参数传进来：</p>
+
+<pre><code class="language-javascript">class CommentList extends Component {
+  static propTypes = {
+    comments: PropTypes.array,
+    onDeleteComment: PropTypes.func
+  }
+
+  static defaultProps = {
+    comments: []
+  }
+
+  handleDeleteComment (index) {
+    if (this.props.onDeleteComment) {
+      this.props.onDeleteComment(index)
+    }
+  }
+
+  render() {
+    return (
+      &lt;div&gt;
+        {this.props.comments.map((comment, i) =&gt;
+          &lt;Comment
+            comment={comment}
+            key={i}
+            index={i}
+            onDeleteComment={this.handleDeleteComment.bind(this)} /&gt;
+        )}
+      &lt;/div&gt;
+    )
+  }
+}
+</code></pre>
+
+<p>当用户点击按钮的时候，<code>Comment</code> 组件会调用 <code>props.onDeleteComment</code>，也就是 <code>CommentList</code> 的 <code>handleDeleteComment</code> 方法。而 <code>handleDeleteComment</code> 会调用 <code>CommentList</code> 所接受的配置参数中的 <code>props.onDeleteComment</code>，并且把下标传出去。</p>
+
+<p>也就是说，我们可以在 <code>CommentApp</code> 给 <code>CommentList</code> 传入一个 <code>onDeleteComment</code> 的配置参数来接受这个删除评论的消息，修改 <code>CommentApp.js</code>：</p>
+
+<pre><code class="language-javascript">...
+  handleDeleteComment (index) {
+    console.log(index)
+  }
+
+  render() {
+    return (
+      &lt;div className='wrapper'&gt;
+        &lt;CommentInput onSubmit={this.handleSubmitComment.bind(this)} /&gt;
+        &lt;CommentList
+          comments={this.state.comments}
+          onDeleteComment={this.handleDeleteComment.bind(this)} /&gt;
+      &lt;/div&gt;
+    )
+  }
+}
+...
+</code></pre>
+
+<p>现在点击删除按钮，可以在控制台看到评论对应的下标打印了出来。其实这就是这么一个过程：<code>CommentList</code> 把下标 <code>index</code> 传给 <code>Comment</code>。点击删除按钮的时候，<code>Comment</code> 把 <code>index</code> 传给了 <code>CommentList</code>，<code>CommentList</code> 再把它传给 <code>CommentApp</code>。现在可以在 <code>CommentApp</code> 中删除评论了：</p>
+
+<pre><code class="language-javascript">...
+  handleDeleteComment (index) {
+    const comments = this.state.comments
+    comments.splice(index, 1)
+    this.setState({ comments })
+    this._saveComments(comments)
+  }
+...
+</code></pre>
+
+<p>我们通过 <code>comments.splice</code> 删除特定下标的评论，并且通过 <code>setState</code> 重新渲染整个评论列表；当然了，还需要把最新的评论列表数据更新到 LocalStorage 中，所以我们在删除、更新以后调用了 <code>_saveComments</code> 方法把数据同步到 LocalStorage 中。</p>
+
+<p>现在就可以愉快地删除评论了。但是，你删除评论以后 5 秒钟后就会在控制台中看到报错了：</p>
+
+<p><a href="../Images/8e3d2b9dbc9afc135fc9bcb94345696e.jpg" target="_blank"><img src="../Images/8e3d2b9dbc9afc135fc9bcb94345696e.jpg" alt="React.js 小书实战评论功能图片"/></a></p>
+
+<p>这是因为我们忘了清除评论的定时器，修改 <code>src/Comment.js</code>，新增生命周期 <code>commentWillUnmount</code> 在评论组件销毁的时候清除定时器：</p>
+
+<pre><code class="language-javascript">...
+  componentWillUnmount () {
+    clearInterval(this._timer)
+  }
+...
+</code></pre>
+
+<p>这才算完成了第 5 个需求。</p>
+
+<h2 id="显示代码块" class="sigil_not_in_toc">显示代码块</h2>
+<p>用户在的输入内容中任何以 `` 包含的内容都会用 <code>&lt;code&gt;</code> 包含起来显示到页面上。<code>&lt;code&gt;</code> 这是一个 HTML 结构，需要往页面动态插入 HTML 结构我们只能用 <code>dangerouslySetInnerHTML</code> 了，修改 <code>src/Comment.js</code>，把原来 <code>render()</code> 函数中的：</p>
+
+<pre><code class="language-javascript">&lt;p&gt;{comment.content}&lt;/p&gt;
+</code></pre>
+
+<p>修改成：</p>
+
+<pre><code class="language-javascript">&lt;p dangerouslySetInnerHTML={{
+  __html: this._getProcessedContent(comment.content)
+}} /&gt;
+</code></pre>
+
+<p>我们把经过 <code>this._getProcessedContent</code> 处理的评论内容以 HTML 的方式插入到 <code>&lt;p&gt;</code> 元素中。<code>this._getProcessedContent</code> 要把  `` 包含的内容用 <code>&lt;code&gt;</code> 包裹起来，一个正则表达式就可以做到了：</p>
+
+<pre><code class="language-javascript">...
+  _getProcessedContent (content) {
+    return content
+      .replace(/`([\S\s]+?)`/g, '&lt;code&gt;$1&lt;/code&gt;')
+  }
+...
+</code></pre>
+
+<p>但是这样做会有严重的 XSS 漏洞，用户可以输入任意的 HTML 标签，用  <code>&lt;script&gt;</code> 执行任意的 JavaScript 代码。所以在替换代码之前，我们要手动地把这些 HTML 标签进行转义：</p>
+
+<pre><code class="language-javascript">...
+  _getProcessedContent (content) {
+    return content
+      .replace(/&amp;/g, "&amp;amp;")
+      .replace(/&lt;/g, "&amp;lt;")
+      .replace(/&gt;/g, "&amp;gt;")
+      .replace(/"/g, "&amp;quot;")
+      .replace(/'/g, "&amp;#039;")
+      .replace(/`([\S\s]+?)`/g, '&lt;code&gt;$1&lt;/code&gt;')
+  }
+...
+</code></pre>
+
+<p>前 5 个 <code>replace</code> 实际上是把类似于 <code>&lt;</code>、<code>&gt;</code> 这种内容替换转义一下，防止用户输入  HTML 标签。最后一行代码才是实现功能的代码。</p>
+
+<p>这时候在评论框中输入：</p>
+
+<blockquote>
+  <p>这是代码块 `console.log`，这是 &lt;h1&gt;正常内容&lt;/h1&gt;。</p>
+</blockquote>
+
+<p>然后点击发布，看看效果：</p>
+
+<p><a href="../Images/594085d69e5e251a072b0673300382d0.jpg" target="_blank"><img src="../Images/594085d69e5e251a072b0673300382d0.jpg" alt="React.js 小书实战评论功能图片"/></a></p>
+
+<p>我们安全地完成了第 6 个需求。到目前为止，第二阶段的实战已经全部完成，你可以在<a href="https://github.com/huzidaha/react-naive-book-examples">这里</a>找到完整的代码。</p>
+
+<h2 id="总结" class="sigil_not_in_toc">总结</h2>
+<p>到这里第二阶段已经全部结束，我们已经掌握了全部 React.js 实战需要的入门知识。接下来我们会学习两个相对比较高级的 React.js 的概念，然后进入 React-redux 的世界，让它们配合 React.js 来构建更成熟的前端页面。</p>
+</body>
+</html>

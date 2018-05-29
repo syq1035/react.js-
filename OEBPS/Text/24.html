@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title></title>
+<link href="../Styles/ebook.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<h1>PropTypes 和组件参数验证</h1>
+    
+      <ul style="font-size: 14px;">
+  <li>
+    作者：<a href="https://www.zhihu.com/people/hu-zi-da-ha" target="_blank">胡子大哈</a>
+  </li>
+  <li>
+    原文链接：<a href="http://huziketang.com/books/react/lesson24"> http://huziketang.com/books/react/lesson24 </a>
+  </li>
+  <li>转载请注明出处，保留原文链接和作者信息。</li>
+</ul>
+
+<p>我们来了到了一个非常尴尬的章节，很多初学的朋友可能对这一章的知识点不屑一顾，觉得用不用对程序功能也没什么影响。但其实这一章节的知识在你构建多人协作、大型的应用程序的时候也是非常重要的，不可忽视。</p>
+
+<p>都说 JavaScript 是一门灵活的语言 —— 这就是像是说“你是个好人”一样，凡事都有背后没有说出来的话。JavaScript 的灵活性体现在弱类型、高阶函数等语言特性上。而语言的弱类型一般来说确实让我们写代码很爽，但是也很容易出 bug。</p>
+
+<p>变量没有固定类型可以随意赋值，在我们构建大型应用程序的时候并不是什么好的事情。你写下了 <code>let a = {}</code> ，如果这是个共享的状态并且在某个地方把 <code>a = 3</code>，那么 <code>a.xxx</code> 就会让程序崩溃了。而这种非常隐晦但是低级的错误在强类型的语言例如 C/C++、Java 中是不可能发生的，这些代码连编译都不可能通过，也别妄图运行。</p>
+
+<p>大型应用程序的构建其实更适合用强类型的语言来构建，它有更多的规则，可以帮助我们在编写代码阶段、编译阶段规避掉很多问题，让我们的应用程序更加的安全。JavaScript 早就脱离了玩具语言的领域并且投入到大型的应用程序的生产活动中，因为它的弱类型，常常意味着不是很安全。所以近年来出现了类似 TypeScript 和 Flow 等技术，来弥补 JavaScript 这方面的缺陷。</p>
+
+<p>React.js 的组件其实是为了构建大型应用程序而生。但是因为 JavaScript 这样的特性，你在编写了一个组件以后，根本不知道别人会怎么使用你的组件，往里传什么乱七八糟的参数，例如评论组件：</p>
+
+<pre><code class="language-javascript">class Comment extends Component {
+  const { comment } = this.props
+  render () {
+    return (
+      &lt;div className='comment'&gt;
+        &lt;div className='comment-user'&gt;
+          &lt;span&gt;{comment.username} &lt;/span&gt;：
+        &lt;/div&gt;
+        &lt;p&gt;{comment.content}&lt;/p&gt;
+      &lt;/div&gt;
+    )
+  }
+}
+</code></pre>
+
+<p>但是别人往里面传一个数字你拿他一点办法都没有：</p>
+
+<pre><code class="language-javascript">&lt;Comment comment={1} /&gt;
+</code></pre>
+
+<p>JavaScript 在这种情况下是不会报任何错误的，但是页面就是显示不正常，然后我们踏上了漫漫 debug 的路程。这里的例子还是过于简单，容易 debug，但是对于比较复杂的成因和情况是比较难处理的。</p>
+
+<p>于是 React.js 就提供了一种机制，让你可以<em>给组件的配置参数加上类型验证</em>，就用上述的评论组件例子，你可以配置 <code>Comment</code> 只能接受对象类型的 <code>comment</code> 参数，你传个数字进来组件就强制报错。</p>
+
+<pre><code class="language-javascript">import React, { Component, PropTypes } from 'react'
+
+class Comment extends Component {
+  static propTypes = {
+    comment: PropTypes.object
+  }
+
+  render () {
+    const { comment } = this.props
+    return (
+      &lt;div className='comment'&gt;
+        &lt;div className='comment-user'&gt;
+          &lt;span&gt;{comment.username} &lt;/span&gt;：
+        &lt;/div&gt;
+        &lt;p&gt;{comment.content}&lt;/p&gt;
+      &lt;/div&gt;
+    )
+  }
+}
+</code></pre>
+
+<p>注意我们在文件头部引入了 <code>PropTypes</code>，并且给 <code>Comment</code> 组件类添加了类属性 <code>propTypes</code>，里面的内容的意思就是你传入的 <code>comment</code> 类型必须为 <code>object</code>（对象）。</p>
+
+<p>这时候如果再往里面传入数字，浏览器就会报错：</p>
+
+<p><a href="../Images/7a422f58dd6f75560c1f0c9166659058.jpg" target="_blank"><img src="../Images/7a422f58dd6f75560c1f0c9166659058.jpg" alt="React.js 小书组件参数验证图片"/></a></p>
+
+<p>出错信息明确告诉我们：你给 <code>Comment</code> 组件传了一个数字类型的 <code>comment</code>，而它应该是 <code>object</code>。你就清晰知道问题出在哪里了。</p>
+
+<p>虽然 <code>propTypes</code> 帮我们指定了参数类型，但是并没有说这个参数一定要传入，事实上，这些参数默认都是可选的。可选参数我们可以通过配置 <code>defaultProps</code>，让它在不传入的时候有默认值。但是我们这里并没有配置 <code>defaultProps</code>，所以如果直接用 <code>&lt;Comment /&gt;</code> 而不传入任何参数的话，<code>comment</code> 就会是 <code>undefined</code>，<code>comment.username</code> 会导致程序报错：</p>
+
+<p><a href="../Images/b553a5255775cdf0318216d752b39abc.jpg" target="_blank"><img src="../Images/b553a5255775cdf0318216d752b39abc.jpg" alt="React.js 小书组件参数验证图片"/></a></p>
+
+<p>这个出错信息并不够友好。我们可以通过 <code>isRequired</code> 关键字来强制组件某个参数必须传入：</p>
+
+<pre><code class="language-javascript">...
+static propTypes = {
+  comment: PropTypes.object.isRequired
+}
+...
+</code></pre>
+
+<p>那么会获得一个更加友好的出错信息，查错会更方便：</p>
+
+<p><a href="../Images/65e6b208262c24caa42e700c9b69c07a.jpg" target="_blank"><img src="../Images/65e6b208262c24caa42e700c9b69c07a.jpg" alt="React.js 小书组件参数验证图片"/></a></p>
+
+<p>React.js 提供的 <code>PropTypes</code> 提供了一系列的数据类型可以用来配置组件的参数：</p>
+
+<pre><code>PropTypes.array
+PropTypes.bool
+PropTypes.func
+PropTypes.number
+PropTypes.object
+PropTypes.string
+PropTypes.node
+PropTypes.element
+...
+</code></pre>
+
+<p>更多类型及其用法可以参看官方文档： <a href="https://facebook.github.io/react/docs/typechecking-with-proptypes.html">Typechecking With PropTypes - React</a>。</p>
+
+<p>组件参数验证在构建大型的组件库的时候相当有用，可以帮助我们迅速定位这种类型错误，让我们组件开发更加规范。另外也起到了一个说明文档的作用，如果大家都约定都写 <code>propTypes</code> ，那你在使用别人写的组件的时候，只要看到组件的 <code>propTypes</code> 就清晰地知道这个组件到底能够接受什么参数，什么参数是可选的，什么参数是必选的。</p>
+
+<h2 id="总结" class="sigil_not_in_toc">总结</h2>
+<p>通过 <code>PropTypes</code> 给组件的参数做类型限制，可以在帮助我们迅速定位错误，这在构建大型应用程序的时候特别有用；另外，给组件加上 <code>propTypes</code>，也让组件的开发、使用更加规范清晰。</p>
+
+<p>这里建议大家写组件的时候尽量都写 <code>propTypes</code>，有时候有点麻烦，但是是值得的。</p>
+</body>
+</html>

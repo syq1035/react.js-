@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title></title>
+<link href="../Styles/ebook.css" type="text/css" rel="stylesheet"/>
+</head>
+<body>
+<h1>挂载阶段的组件生命周期（一）</h1>
+    
+      <ul style="font-size: 14px;">
+  <li>
+    作者：<a href="https://www.zhihu.com/people/hu-zi-da-ha" target="_blank">胡子大哈</a>
+  </li>
+  <li>
+    原文链接：<a href="http://huziketang.com/books/react/lesson18"> http://huziketang.com/books/react/lesson18 </a>
+  </li>
+  <li>转载请注明出处，保留原文链接和作者信息。</li>
+</ul>
+
+<p>我们在<a href="/blog/lesson6">讲解 JSX 的章节</a>中提到，下面的代码：</p>
+
+<pre><code class="language-javascript">ReactDOM.render(
+ &lt;Header /&gt;, 
+  document.getElementById('root')
+)
+</code></pre>
+
+<p>会编译成：</p>
+
+<pre><code class="language-javascript">ReactDOM.render(
+  React.createElement(Header, null), 
+  document.getElementById('root')
+)
+</code></pre>
+
+<p>其实我们把 <code>Header</code> 组件传给了 <code>React.createElement</code> 函数，又把函数返回结果传给了 <code>ReactDOM.render</code>。我们可以简单猜想一下它们会干什么事情：</p>
+
+<pre><code class="language-javascript">// React.createElement 中实例化一个 Header
+const header = new Header(props, children)
+// React.createElement 中调用 header.render 方法渲染组件的内容
+const headerJsxObject = header.render()
+
+// ReactDOM 用渲染后的 JavaScript 对象来来构建真正的 DOM 元素
+const headerDOM = createDOMFromObject(headerJsxObject)
+// ReactDOM 把 DOM 元素塞到页面上
+document.getElementById('root').appendChild(headerDOM)
+</code></pre>
+
+<p>上面过程其实很简单，看代码就能理解。</p>
+
+<p>我们把 <em>React.js 将组件渲染，并且构造 DOM 元素然后塞入页面的过程称为组件的挂载</em>（这个定义请好好记住）。其实 React.js 内部对待每个组件都有这么一个过程，也就是初始化组件 -&gt; 挂载到页面上的过程。所以你可以理解一个组件的方法调用是这么一个过程：</p>
+
+<pre><code>-&gt; constructor()
+-&gt; render()
+// 然后构造 DOM 元素插入页面
+</code></pre>
+
+<p>这当然是很好理解的。React.js 为了让我们能够更好的掌控组件的挂载过程，往上面插入了两个方法：</p>
+
+<pre><code>-&gt; constructor()
+-&gt; componentWillMount()
+-&gt; render()
+// 然后构造 DOM 元素插入页面
+-&gt; componentDidMount()
+</code></pre>
+
+<p><code>componentWillMount</code> 和 <code>componentDidMount</code> 都是可以像 <code>render</code> 方法一样自定义在组件的内部。挂载的时候，React.js 会在组件的 <code>render</code> 之前调用 <code>componentWillMount</code>，在 DOM 元素塞入页面以后调用 <code>componentDidMount</code>。</p>
+
+<p>我们给 <code>Header</code> 组件加上这两个方法，并且打一些 Log：</p>
+
+<pre><code class="language-javascript">class Header extends Component {
+  constructor () {
+    super()
+    console.log('construct')
+  }
+
+  componentWillMount () {
+    console.log('component will mount')
+  }
+
+  componentDidMount () {
+    console.log('component did mount')
+  }
+
+  render () {
+    console.log('render')
+    return (
+      &lt;div&gt;
+        &lt;h1 className='title'&gt;React 小书&lt;/h1&gt;
+      &lt;/div&gt;
+    )
+  }
+}
+</code></pre>
+
+<p>在控制台你可以看到依次输出：</p>
+
+<p><a href="../Images/382f29540545d9d26fb8364d944e203f.jpg" target="_blank"><img src="../Images/382f29540545d9d26fb8364d944e203f.jpg" alt="null"/></a></p>
+
+<p>可以看到，React.js 确实按照我们上面所说的那样调用了定义的两个方法 <code>componentWillMount</code> 和 <code>componentDidMount</code>。</p>
+
+<p>机灵的同学可以想到，一个组件可以插入页面，当然也可以从页面中删除。</p>
+
+<pre><code>-&gt; constructor()
+-&gt; componentWillMount()
+-&gt; render()
+// 然后构造 DOM 元素插入页面
+-&gt; componentDidMount()
+// ...
+// 从页面中删除
+</code></pre>
+
+<p>React.js 也控制了这个组件的删除过程。在组件删除之前 React.js 会调用组件定义的 <code>componentWillUnmount</code>：</p>
+
+<pre><code>-&gt; constructor()
+-&gt; componentWillMount()
+-&gt; render()
+// 然后构造 DOM 元素插入页面
+-&gt; componentDidMount()
+// ...
+// 即将从页面中删除
+-&gt; componentWillUnmount()
+// 从页面中删除
+</code></pre>
+
+<p>看看什么情况下会把组件从页面中删除，继续使用上面例子的代码，我们再定义一个 <code>Index</code> 组件：</p>
+
+<pre><code class="language-javascript">class Index extends Component {
+  constructor() {
+    super()
+    this.state = {
+      isShowHeader: true
+    }
+  }
+
+  handleShowOrHide () {
+    this.setState({
+      isShowHeader: !this.state.isShowHeader
+    })
+  }
+
+  render () {
+    return (
+      &lt;div&gt;
+        {this.state.isShowHeader ? &lt;Header /&gt; : null}
+        &lt;button onClick={this.handleShowOrHide.bind(this)}&gt;
+          显示或者隐藏标题
+        &lt;/button&gt;
+      &lt;/div&gt;
+    )
+  }
+}
+
+ReactDOM.render(
+  &lt;Index /&gt;,
+  document.getElementById('root')
+)
+</code></pre>
+
+<p><code>Index</code> 组件使用了 <code>Header</code> 组件，并且有一个按钮，可以控制 <code>Header</code> 的显示或者隐藏。下面这行代码：</p>
+
+<pre><code class="language-javascript">...
+{this.state.isShowHeader ? &lt;Header /&gt; : null}
+...
+</code></pre>
+
+<p>相当于 <code>state.isShowHeader</code> 为 <code>true</code> 的时候把 <code>Header</code>  插入页面，<code>false</code> 的时候把 <code>Header</code> 从页面上删除。这时候我们给 <code>Header</code> 添加 <code>componentWillUnmount</code> 方法：</p>
+
+<pre><code class="language-javascript">...
+  componentWillUnmount() {
+    console.log('component will unmount')
+  }
+...
+</code></pre>
+
+<p>这时候点击页面上的按钮，你会看到页面的标题隐藏了，并且控制台打印出来下图的最后一行，说明 <code>componentWillUnmount</code> 确实被 React.js 所调用了：</p>
+
+<p><a href="../Images/19c9b34ebe0bec31bbf85b1186626e35.jpg" target="_blank"><img src="../Images/19c9b34ebe0bec31bbf85b1186626e35.jpg" alt="null"/></a></p>
+
+<p>你可以多次点击按钮，随着按钮的显示和隐藏，上面的内容会按顺序重复地打印出来，可以体会一下这几个方法的调用过程和顺序。</p>
+
+<h2 id="总结" class="sigil_not_in_toc">总结</h2>
+<p>React.js 将组件渲染，并且构造 DOM 元素然后塞入页面的过程称为组件的挂载。这一节我们学习了 React.js 控制组件在页面上挂载和删除过程里面几个方法：</p>
+
+<ul>
+  <li><code>componentWillMount</code>：组件挂载开始之前，也就是在组件调用 <code>render</code> 方法之前调用。</li>
+  <li><code>componentDidMount</code>：组件挂载完成以后，也就是 DOM 元素已经插入页面后调用。</li>
+  <li><code>componentWillUnmount</code>：组件对应的 DOM 元素从页面中删除之前调用。</li>
+</ul>
+
+<p>但这一节并没有讲这几个方法到底在实际项目当中有什么作用，下一节我们通过例子来讲解一下这几个方法的用途。</p>
+</body>
+</html>
